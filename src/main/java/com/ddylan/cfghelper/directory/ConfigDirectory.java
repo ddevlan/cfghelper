@@ -39,11 +39,15 @@ public class ConfigDirectory {
                 int found = 0;
                 for (File file : getData()) {
                     if (file.getName().contains(dataExtension)) {
-                        ConfigFile configFile = new ConfigFile(file.getName(), this);
-                        ConfigHelper.getInstance().log("Found data file " + file.getName() + " in directory " + directoryName + "!");
-                        dataFileCache.put(file.getName().replace(dataExtension, ""), configFile);
-                        dataFileSet.add(configFile);
-                        found++;
+                        try (ConfigFile foundCfg = new ConfigFile(file.getName(), this)) {
+                            dataFileCache.put(file.getName().replace(dataExtension, ""), foundCfg);
+                            ConfigHelper.getInstance().log("Found data file " + file.getName() + " in directory " + directoryName + "!");
+                            dataFileSet.add(foundCfg);
+                            found++;
+                        } catch (Exception e) {
+                            ConfigHelper.getInstance().err("Could not load data file " + file.getName() + " in directory " + directoryName + "!");
+                            e.printStackTrace();
+                        }
                     } else {
                         ConfigHelper.getInstance().log("Found non-configuration file " + file.getName() + " in directory " + directoryName + "!");
                     }

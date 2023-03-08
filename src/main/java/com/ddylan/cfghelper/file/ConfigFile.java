@@ -2,6 +2,8 @@ package com.ddylan.cfghelper.file;
 
 import com.ddylan.cfghelper.ConfigHelper;
 import com.ddylan.cfghelper.directory.ConfigDirectory;
+import lombok.Getter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -10,12 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class ConfigFile {
+public class ConfigFile implements AutoCloseable {
 
-    private final String fileName;
+    @Getter private final String fileName;
     private final File file;
     private YamlConfiguration config;
-    private final Map<String, Object> values;
+    @Getter private final Map<String, Object> values;
     private final Map<String, Long> lastModified;
     private final ConfigDirectory directory;
 
@@ -29,7 +31,7 @@ public class ConfigFile {
         if (!directory.exists()) directory.create();
         this.directory = directory;
 
-        this.file = new File(directory.getAbsPath() + File.separator + fileName);
+        this.file = new File(directory.getAbsPath() + File.separator + fileName + directory.getDataExtension());
 
         this.values = new TreeMap<>();
         this.lastModified = new HashMap<>();
@@ -55,7 +57,7 @@ public class ConfigFile {
 
     private boolean load() {
         try {
-            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+            config = YamlConfiguration.loadConfiguration(file);
             for (String key : config.getKeys(true)) {
                 values.put(key, config.get(key));
                 lastModified.put(key, file.lastModified());
@@ -82,6 +84,13 @@ public class ConfigFile {
 
     public boolean save() {
         try {
+            if (config == null) {
+                config = YamlConfiguration.loadConfiguration(file);
+            }
+            for (String key : values.keySet()) {
+                config.set(key, values.get(key));
+            }
+
             config.save(file);
             return true;
         } catch (Exception e) {
@@ -197,4 +206,25 @@ public class ConfigFile {
         lastModified.put(key, file.lastModified());
     }
 
+    public void set(String key, Object value, boolean save) {
+        set(key, value);
+        if (save) save();
+    }
+
+    public ConfigurationSection getConfigurationSection(String key) {
+        if (isModified(key)) {
+            values.put(key, config.getConfigurationSection(key));
+            lastModified.put(key, file.lastModified());
+        }
+        return (ConfigurationSection) values.get(key);
+    }
+
+    @Override
+    public void close() {
+        if (save()) {
+            ConfigHelper.getInstance().log("Saved file " + fileName + "!");
+        } else {
+            ConfigHelper.getInstance().err("Could not save file " + fileName + "!");
+        }
+    }
 }
