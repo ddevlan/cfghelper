@@ -5,6 +5,7 @@ import com.ddylan.cfghelper.directory.ConfigDirectory;
 import lombok.Getter;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.HashMap;
@@ -19,10 +20,14 @@ public class ConfigFile implements AutoCloseable {
     private YamlConfiguration config;
     @Getter private final Map<String, Object> values;
     private final Map<String, Long> lastModified;
-    private final ConfigDirectory directory;
+    @Getter private final ConfigDirectory directory;
 
     public ConfigFile(String fileName) {
         this(fileName, ConfigHelper.getInstance().getDefaultConfigDirectory());
+    }
+
+    public ConfigFile(String name, JavaPlugin plugin) {
+        this(name, new ConfigDirectory(name, plugin.getDataFolder().getAbsolutePath()));
     }
 
     public ConfigFile(String fileName, ConfigDirectory directory) {
